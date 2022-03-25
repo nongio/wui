@@ -1,0 +1,17 @@
+# Meson Directories
+meson-logs
+meson-private
+/subprojects/*
+!/subprojects/*.wrap
+!/subprojects/packagefiles
+
+# Ninja
+build.ninja
+.ninja_deps
+.ninja_logs
+
+# Misc
+compile_commands.json
+
+#vscode
+.vscode
