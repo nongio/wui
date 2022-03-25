@@ -103,10 +103,14 @@ conf_data.set_quoted('SC_VERSION', version)
 
 sc_sources = [
   'main.cpp',
-  'src/wl.cpp',
   'src/window.cpp',
   'src/egl.cpp',
   'src/skia.cpp',
+  'src/output.cpp',
+  'src/seat.cpp',
+  'src/keyboard.cpp',
+  'src/pointer.cpp',
+  'src/wl.cpp',
 ]
 
 sc_headers = [

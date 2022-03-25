@@ -19,7 +19,6 @@ xdg_toplevel_handle_configure(void *data, struct xdg_toplevel *xdg_toplevel,
 		window->height = h;
 
 		wl_egl_window_resize(window->egl->native_window, w, h, 0, 0);
-		LOG("wl_surface_commit !\n");
 		wl_surface_commit(window->surface);
 	}
 }
@@ -27,6 +26,10 @@ xdg_toplevel_handle_configure(void *data, struct xdg_toplevel *xdg_toplevel,
 static void
 xdg_toplevel_handle_close(void *data, struct xdg_toplevel *xdg_toplevel)
 {
+	LOG("close\n");
+	struct wui_window *window = (struct wui_window *) data;
+	wl_display_disconnect(window->wl->wl_display);
+
 	// window closed, be sure that this event gets processed
 	// program_alive = false;
 }
@@ -52,15 +55,16 @@ struct wui_window *
 window_create(int width, int height)
 {
 
-	struct wl_context *context = wui_wl_context();
+	struct wayland_config *wlconfig = wui_wl_context();
 
 	struct wui_window *window =
 		(struct wui_window *) calloc(1, sizeof(struct wui_window));
-
+	window->wl = wlconfig;
 	window->width = width;
 	window->height = height;
 	window->content_scale = 2;
-	window->surface = wl_compositor_create_surface(context->wl_compositor);
+	window->surface = wl_compositor_create_surface(wlconfig->wl_compositor);
+	wl_surface_set_user_data(window->surface, window);
 
 	if (window->surface == NULL) {
 		LOG("No Compositor surface ! Yay....\n");
@@ -69,16 +73,16 @@ window_create(int width, int height)
 		LOG("Got a compositor surface !\n");
 	}
 	window->xdg_surface =
-		xdg_wm_base_get_xdg_surface(context->xdg_wm_base, window->surface);
-	xdg_surface_add_listener(window->xdg_surface, &xdg_surface_listener, NULL);
+		xdg_wm_base_get_xdg_surface(wlconfig->xdg_wm_base, window->surface);
+	xdg_surface_add_listener(window->xdg_surface, &xdg_surface_listener, window);
 
 	window->xdg_toplevel = xdg_surface_get_toplevel(window->xdg_surface);
 	xdg_toplevel_set_title(window->xdg_toplevel, "Wayland EGL example");
 	xdg_toplevel_add_listener(window->xdg_toplevel, &xdg_toplevel_listener,
-							  NULL);
+							  window);
 
 	// create native window
-	window->region = wl_compositor_create_region(context->wl_compositor);
+	window->region = wl_compositor_create_region(wlconfig->wl_compositor);
 
 	wl_region_add(window->region, 0, 0, window->width, window->height);
 	wl_surface_set_opaque_region(window->surface, window->region);
@@ -97,8 +101,8 @@ window_create(int width, int height)
 		LOG("Window created !\n");
 	}
 
-	window->egl = create_egl_context(context->wl_display, window->egl_window);
+	window->egl = create_egl_context(wlconfig->wl_display, window->egl_window);
 	window->skia = skia_context_create_for_window(window);
-	wl_display_dispatch_pending(context->wl_display);
+	wl_display_dispatch_pending(wlconfig->wl_display);
 	return window;
 }

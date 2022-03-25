@@ -66,14 +66,12 @@ struct window {
 	struct xdg_toplevel *toplevel;
 };
 struct wayland_config {
-	struct wl_display *display;
-	struct wl_registry *registry;
-	struct wl_compositor *compositor;
-	struct wl_shell *shell;
-	struct wl_shm *shm;
-	struct wl_seat *seat;
-	struct wl_keyboard *keyboard;
-	struct xdg_wm_base *wm_base;
+	struct wl_display *wl_display;
+	struct wl_registry *wl_registry;
+	struct wl_compositor *wl_compositor;
+	struct wl_seat *wl_seat;
+	struct wl_keyboard *wl_keyboard;
+	struct xdg_wm_base *xdg_wm_base;
 	struct zwlr_layer_shell_v1 *layer_shell;
 
 	int seat_version;
@@ -108,17 +106,12 @@ struct wayland_config {
 	int modifiers;
 };
 
-struct wl_context {
-	struct wl_display *wl_display;
-	struct wl_registry *wl_registry;
-	struct wl_compositor *wl_compositor;
-	struct xdg_wm_base *xdg_wm_base;
-};
+extern const struct wl_output_listener output_listener;
+extern const struct wl_seat_listener seat_listener;
+extern const struct wl_keyboard_listener keyboard_listener;
+extern const struct wl_pointer_listener pointer_listener;
 
+struct wayland_config *wui_wl_init();
+struct wayland_config *wui_wl_context();
 
-
-
-
-struct wl_context *wui_wl_init();
-struct wl_context *wui_wl_context();
 #endif

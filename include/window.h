@@ -7,10 +7,11 @@
 
 #include "egl.h"
 #include "skia.h"
+#include "wl.h"
 
 struct wui_window {
 	struct egl_context *egl;
-
+	struct wayland_config *wl;
 	struct wl_surface *surface;
 	struct xdg_surface *xdg_surface;
 	struct xdg_toplevel *xdg_toplevel;

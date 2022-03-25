@@ -72,7 +72,11 @@ main()
 	window->skia->context->flushAndSubmit();
 	eglSwapBuffers(window->egl->display, window->egl->surface);
 	//
-	while (window != NULL) {
+	while (wl_display_dispatch(window->wl->wl_display) != -1) {
+    /* This space deliberately left blank */
 	}
+
+	wl_display_disconnect(window->wl->wl_display);
+
 	exit(0);
 }
