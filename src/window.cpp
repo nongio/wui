@@ -1,6 +1,8 @@
 #include "window.h"
 #include "wl.h"
 
+bool mode = false;
+
 static void
 xdg_toplevel_handle_configure(void *data, struct xdg_toplevel *xdg_toplevel,
 							  int32_t w, int32_t h, struct wl_array *states)
@@ -13,13 +15,22 @@ xdg_toplevel_handle_configure(void *data, struct xdg_toplevel *xdg_toplevel,
 	if (w == 0 && h == 0)
 		return;
 
+	if (window->base.wl->decoration_manager && mode == false) {
+		mode = true;
+		// Let the compositor do all the complicated window management
+		window->decoration =
+			zxdg_decoration_manager_v1_get_toplevel_decoration(
+				window->base.wl->decoration_manager, window->xdg_toplevel);
+		zxdg_toplevel_decoration_v1_set_mode(window->decoration,
+			ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+	}
 	// window resized
-	if (window->width != w && window->height != h) {
-		window->width = w;
-		window->height = h;
+	if (window->base.width != w && window->base.height != h) {
+		window->base.width = w;
+		window->base.height = h;
 
-		wl_egl_window_resize(window->egl->native_window, w, h, 0, 0);
-		wl_surface_commit(window->surface);
+		wl_egl_window_resize(window->base.egl->native_window, w, h, 0, 0);
+		wl_surface_commit(window->base.surface);
 	}
 }
 
@@ -28,7 +39,7 @@ xdg_toplevel_handle_close(void *data, struct xdg_toplevel *xdg_toplevel)
 {
 	LOG("close\n");
 	struct wui_window *window = (struct wui_window *) data;
-	wl_display_disconnect(window->wl->wl_display);
+	wl_display_disconnect(window->base.wl->wl_display);
 
 	// window closed, be sure that this event gets processed
 	// program_alive = false;
@@ -39,11 +50,14 @@ struct xdg_toplevel_listener xdg_toplevel_listener = {
 	.close = xdg_toplevel_handle_close,
 };
 
+
+
 static void
 xdg_surface_configure(void *data, struct xdg_surface *xdg_surface,
 					  uint32_t serial)
 {
 	LOG("xdg_surface_ack_configure\n");
+	struct wui_window *window = (struct wui_window *) data;
 	xdg_surface_ack_configure(xdg_surface, serial);
 }
 
@@ -59,21 +73,14 @@ window_create(int width, int height)
 
 	struct wui_window *window =
 		(struct wui_window *) calloc(1, sizeof(struct wui_window));
-	window->wl = wlconfig;
-	window->width = width;
-	window->height = height;
-	window->content_scale = 2;
-	window->surface = wl_compositor_create_surface(wlconfig->wl_compositor);
-	wl_surface_set_user_data(window->surface, window);
+	
+	view_init(&window->base, width, height);
+	view_init_buffer(&window->base);
+	//wl_surface_set_user_data(window->base.surface, window);
 
-	if (window->surface == NULL) {
-		LOG("No Compositor surface ! Yay....\n");
-		exit(1);
-	} else {
-		LOG("Got a compositor surface !\n");
-	}
+	
 	window->xdg_surface =
-		xdg_wm_base_get_xdg_surface(wlconfig->xdg_wm_base, window->surface);
+		xdg_wm_base_get_xdg_surface(wlconfig->xdg_wm_base, window->base.surface);
 	xdg_surface_add_listener(window->xdg_surface, &xdg_surface_listener, window);
 
 	window->xdg_toplevel = xdg_surface_get_toplevel(window->xdg_surface);
@@ -84,25 +91,13 @@ window_create(int width, int height)
 	// create native window
 	window->region = wl_compositor_create_region(wlconfig->wl_compositor);
 
-	wl_region_add(window->region, 0, 0, window->width, window->height);
-	wl_surface_set_opaque_region(window->surface, window->region);
+	wl_region_add(window->region, 0, 0, window->base.width, window->base.height);
+	wl_surface_set_opaque_region(window->base.surface, window->region);
 
-	wl_surface_set_buffer_scale(window->surface, window->content_scale);
-	wl_surface_commit(window->surface);
+	
 
-	window->egl_window = wl_egl_window_create(
-		window->surface, window->width * window->content_scale,
-		window->height * window->content_scale);
+	wl_surface_commit(window->base.surface);
 
-	if (window->egl_window == EGL_NO_SURFACE) {
-		LOG("No window !?\n");
-		exit(1);
-	} else {
-		LOG("Window created !\n");
-	}
-
-	window->egl = create_egl_context(wlconfig->wl_display, window->egl_window);
-	window->skia = skia_context_create_for_window(window);
 	wl_display_dispatch_pending(wlconfig->wl_display);
 	return window;
 }

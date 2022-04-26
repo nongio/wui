@@ -9,7 +9,9 @@
 #include <wayland-client.h>
 #include <xkbcommon/xkbcommon.h>
 
+#include "sc-layer-unstable-v1-protocol.h"
 #include "xdg-shell-protocol.h"
+#include "xdg-decoration-unstable-v1-protocol.h"
 
 #include "log.h"
 
@@ -69,10 +71,14 @@ struct wayland_config {
 	struct wl_display *wl_display;
 	struct wl_registry *wl_registry;
 	struct wl_compositor *wl_compositor;
+	struct wl_subcompositor *wl_subcompositor;
 	struct wl_seat *wl_seat;
 	struct wl_keyboard *wl_keyboard;
 	struct xdg_wm_base *xdg_wm_base;
 	struct zwlr_layer_shell_v1 *layer_shell;
+	struct sc_shell_unstable_v1 *sc_layer_shell;
+	struct wl_data_device_manager *data_device_manager;
+	struct zxdg_decoration_manager_v1 *decoration_manager;
 
 	int seat_version;
 

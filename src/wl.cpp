@@ -2,7 +2,6 @@
 
 struct wayland_config *wlconfig;
 
-
 // wayland wm base ping handler
 
 static void
@@ -22,25 +21,25 @@ global_registry_handler(void *data, struct wl_registry *registry, uint32_t id,
 						const char *interface, uint32_t version)
 {
 	LOG("Got a registry event for %s id %d\n", interface, id);
-	struct wayland_config *wlconfig = (struct wayland_config *)data;
+	struct wayland_config *wlconfig = (struct wayland_config *) data;
 	if (strcmp(interface, "wl_compositor") == 0) {
 		LOG("got a compositor\n");
 		wlconfig->wl_compositor = (struct wl_compositor *) wl_registry_bind(
-			registry, id, &wl_compositor_interface, 3);
+			registry, id, &wl_compositor_interface, 4);
 
 	} else if (strcmp(interface, xdg_wm_base_interface.name) == 0) {
 
 		wlconfig->xdg_wm_base = (struct xdg_wm_base *) wl_registry_bind(
 			registry, id, &xdg_wm_base_interface, 1);
 		xdg_wm_base_add_listener(wlconfig->xdg_wm_base, &xdg_wm_base_listener,
-								 wlconfig
-								 );
+								 wlconfig);
 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
 		struct output *output = (struct output *) malloc(sizeof(struct output));
 		memset(output, 0, sizeof(struct output));
 		output->wlconfig = wlconfig;
 		output->scale = 1;
-		output->output = (struct wl_output*) wl_registry_bind(registry, id, &wl_output_interface, 2);
+		output->output = (struct wl_output *) wl_registry_bind(
+			registry, id, &wl_output_interface, 2);
 		output->server_output_id = id;
 		wl_list_insert(wlconfig->output_list.prev, &output->link);
 		wlconfig->output_count++;
@@ -48,13 +47,27 @@ global_registry_handler(void *data, struct wl_registry *registry, uint32_t id,
 	} else if (strcmp(interface, wl_seat_interface.name) == 0) {
 		wlconfig->pointer.wlpointer = NULL;
 		wlconfig->seat_version = version;
-		wlconfig->wl_seat = (struct wl_seat *) wl_registry_bind(wlconfig->wl_registry, id, &wl_seat_interface, 1);
+		wlconfig->wl_seat = (struct wl_seat *) wl_registry_bind(
+			wlconfig->wl_registry, id, &wl_seat_interface, 1);
 		wl_seat_add_listener(wlconfig->wl_seat, &seat_listener, wlconfig);
+	} else if (strcmp(interface, wl_subcompositor_interface.name) == 0) {
+		wlconfig->wl_subcompositor =
+			(struct wl_subcompositor *) wl_registry_bind(
+				registry, id, &wl_subcompositor_interface, 1);
+	} else if (strcmp(interface, wl_data_device_manager_interface.name) == 0) {
+		wlconfig->data_device_manager =
+			(struct wl_data_device_manager *) wl_registry_bind(
+				registry, id, &wl_data_device_manager_interface, 3);
+	} else if (strcmp(interface, zxdg_decoration_manager_v1_interface.name) ==
+			   0) {
+		wlconfig->decoration_manager =
+			(struct zxdg_decoration_manager_v1 *) wl_registry_bind(
+				registry, id, &zxdg_decoration_manager_v1_interface, 1);
+	} else if (strcmp(interface, sc_shell_unstable_v1_interface.name) == 0) {
+		wlconfig->sc_layer_shell =
+			(struct sc_shell_unstable_v1 *) wl_registry_bind(
+				registry, id, &sc_shell_unstable_v1_interface, 1);
 	}
-	//  else if(strcmp(interface, sc_shell_unstable_v1_interface.name) == 0) {
-	// 	SCShell = wl_registry_bind(registry, id,
-	// 			&sc_shell_unstable_v1_interface, 1);
-	// }
 }
 
 // wayland registry handler on remove
@@ -72,10 +85,11 @@ struct wayland_config *
 wui_wl_init()
 {
 
- 	wlconfig = (struct wayland_config *) calloc(1, sizeof(struct wayland_config));
-	
+	wlconfig =
+		(struct wayland_config *) calloc(1, sizeof(struct wayland_config));
+
 	wl_list_init(&wlconfig->output_list);
-  	wl_list_init(&wlconfig->window_list);
+	wl_list_init(&wlconfig->window_list);
 
 	wlconfig->wl_display = wl_display_connect(NULL);
 

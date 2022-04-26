@@ -11,16 +11,14 @@
 #include <include/core/SkSurface.h>
 #include <include/core/SkCanvas.h>
 #include <include/gpu/gl/GrGLTypes.h>
-#include <include/core/SkFont.h>
-#include <include/core/SkFontMgr.h>
 
-#include "window.h"
+
+#include "view.h"
 
 struct skia_context {
     sk_sp<GrDirectContext> context;
     sk_sp<SkSurface> surface;
-    
 };
 
-struct skia_context *skia_context_create_for_window(struct wui_window *win);
+struct skia_context *skia_context_create_for_view(struct wui_view *view);
 #endif

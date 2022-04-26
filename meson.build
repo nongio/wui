@@ -34,6 +34,7 @@ glesv2 = dependency('glesv2')
 depot_tools = subproject('depot_tools')
 # Skia
 libskia = subproject('skia').get_variable('dep')
+libyoga = subproject('yoga').get_variable('dep')
 
 wl_protocol_dir = wayland_protos.get_variable(pkgconfig:'pkgdatadir')
 
@@ -44,11 +45,14 @@ wayland_scanner_server = generator(
   output: '@BASENAME@-protocol.h',
   arguments: ['server-header', '@INPUT@', '@OUTPUT@'],
 )
+#message('\n'.join(wl_protocol_dir))
 
 server_protocols = [
   [wl_protocol_dir, 'stable/xdg-shell/xdg-shell.xml'],
+  [wl_protocol_dir, 'unstable/xdg-decoration/xdg-decoration-unstable-v1.xml'],
+
  # ['../screen-composer/protocols/wlr-layer-shell-unstable-v1.xml'],
- # ['../screen-composer/protocols/sc-layer-unstable-v1.xml'],
+  ['../screen-composer/protocols/sc-layer-unstable-v1.xml'],
 ]
 
 wl_protos_src = []
@@ -96,14 +100,13 @@ if git.found()
   endif
 endif
 
-#inih_dep = subproject('inih', default_options : []).get_variable('inih_dep')
-
 conf_data = configuration_data()
 conf_data.set_quoted('SC_VERSION', version)
 
-sc_sources = [
-  'main.cpp',
+wui_sources = [
+  'src/view.cpp',
   'src/window.cpp',
+  'src/sc_layer.cpp',
   'src/egl.cpp',
   'src/skia.cpp',
   'src/output.cpp',
@@ -113,15 +116,14 @@ sc_sources = [
   'src/wl.cpp',
 ]
 
-sc_headers = [
+wui_headers = [
   configure_file(input: 'config.h.in',
                  output: 'config.h',
                  configuration: conf_data),
 ]
 
-executable(
-  'layers',
-  sc_sources,
+wuilib = static_library('wui',
+  wui_sources,
   include_directories: include_directories('include'),
   dependencies: [
     client_protos,
@@ -129,13 +131,53 @@ executable(
     libskia,
     egl,
     glesv2,
-  #  dependency('libwebp'),
+    libyoga,
     dependency('libjpeg'),
     dependency('libpng'),
     dependency('fontconfig'),
     dependency('xkbcommon'),
   ],
-  install: true,
+)
+
+executable(
+  'simple_app',
+  [
+    './apps/simple.cpp'
+  ],
+  include_directories: include_directories('include'),
+  dependencies: [
+    client_protos,
+    wayland_egl,
+    libskia,
+    egl,
+    glesv2,
+    libyoga,
+    dependency('libjpeg'),
+    dependency('libpng'),
+    dependency('fontconfig'),
+    dependency('xkbcommon'),
+  ],
+  link_with: [wuilib]
+)
+executable(
+  'layers_app',
+  [
+    './apps/layers.cpp'
+  ],
+  include_directories: include_directories('include'),
+  dependencies: [
+    client_protos,
+    wayland_egl,
+    libskia,
+    egl,
+    glesv2,
+    libyoga,
+    dependency('libjpeg'),
+    dependency('libpng'),
+    dependency('fontconfig'),
+    dependency('xkbcommon'),
+  ],
+  link_with: [wuilib]
 )
 
 summary = [
