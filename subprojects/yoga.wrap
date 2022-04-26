@@ -1,0 +1,6 @@
+[wrap-git]
+url = https://github.com/facebook/yoga.git
+revision = head
+patch_directory = yoga
+[provide]
+dependency_names = yoga
