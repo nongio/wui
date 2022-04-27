@@ -12,6 +12,7 @@ xdg_surface_configure(void *data, struct xdg_surface *xdg_surface,
 	xdg_surface_ack_configure(xdg_surface, serial);
 }
 
+struct sc_animation_v1 *animation;
 const struct xdg_surface_listener xdg_surface_listener = {
 	.configure = xdg_surface_configure,
 };
@@ -51,7 +52,13 @@ layer_create(int width, int height)
 	wl_region_add(layer->region, 0, 0, layer->base.width, layer->base.height);
 	wl_surface_set_opaque_region(layer->base.surface, layer->region);
 
-	
+	animation = sc_shell_unstable_v1_get_animation(
+		wlconfig->sc_layer_shell,
+		wl_fixed_from_double(2.0), // duration
+		wl_fixed_from_double(1.0), // speed
+		1, //repeat-count
+		0 // autoreverse
+	);
 
 	wl_surface_commit(layer->base.surface);
 
