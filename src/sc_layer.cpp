@@ -13,6 +13,9 @@ xdg_surface_configure(void *data, struct xdg_surface *xdg_surface,
 }
 
 struct sc_animation_v1 *animation;
+struct sc_timing_function_v1 *timing;
+struct sc_basic_animation_v1 *basic_animation;
+
 const struct xdg_surface_listener xdg_surface_listener = {
 	.configure = xdg_surface_configure,
 };
@@ -58,6 +61,16 @@ layer_create(int width, int height)
 		wl_fixed_from_double(1.0), // speed
 		1, //repeat-count
 		0 // autoreverse
+	);
+
+	timing = sc_shell_unstable_v1_get_timing_function(
+		wlconfig->sc_layer_shell);
+
+	basic_animation = sc_shell_unstable_v1_get_basic_animation(
+		wlconfig->sc_layer_shell,
+		SC_ANIMATION_V1_ANIMATION_VALUE_TYPE_VALUE,
+		animation,
+		timing
 	);
 
 	wl_surface_commit(layer->base.surface);
